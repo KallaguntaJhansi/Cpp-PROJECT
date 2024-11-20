@@ -1,0 +1,273 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <exception>
+#include <sstream>
+using namespace std;
+class Question {
+public:
+    string questionText;
+    vector<string> options;
+    char correctAnswer;
+    Question(const string& text, const vector<string>& opts, char correct)
+        : questionText(text), options(opts), correctAnswer(correct) {}
+    void displayQuestion() const {
+        cout << questionText << endl;
+        for (int i = 0; i < options.size(); i++) {
+            cout << char('A' + i) << ". " << options[i] << endl;
+        }
+    }
+    bool checkAnswer(char answer) const {
+        return answer == correctAnswer;
+    }
+};
+class Course {
+public:
+    string courseName;
+    string courseID;
+    string description;
+    vector<Question> quizzes;
+    vector<Question> advancedQuizzes;
+    Course(string name, string id, string desc)
+        : courseName(name), courseID(id), description(desc) {}
+    void addQuiz(const Question& question) {
+        quizzes.push_back(question);
+    }
+    void addAdvancedQuiz(const Question& question) {
+        advancedQuizzes.push_back(question);
+    }
+    virtual void showDetails() const {
+        cout << "Course: " << courseName << " (" << courseID << ")\n";
+        cout << "Description: " << description << "\n";
+    }
+};
+class User {
+public:
+    string name;
+    string college;
+    string email;
+    User(const string& studentName, const string& collegeName, const string& mail)
+        : name(studentName), college(collegeName), email(mail) {}
+    virtual void enrollCourse(Course& course) = 0;
+};
+class Student : public User {
+public:
+    vector<Course*> enrolledCourses;
+    Student(const string& studentName, const string& collegeName, const string& mail)
+        : User(studentName, collegeName, mail) {}
+    void enrollCourse(Course& course) override {
+        enrolledCourses.push_back(&course);
+        cout << "You enrolled in " << course.courseName << " successfully!\n";
+        cout << "Select View course link to find the course link" << endl;
+    }
+    bool isEnrolled(const Course& course) const {
+        for (auto* enrolledCourse : enrolledCourses) {
+            if (enrolledCourse->courseID == course.courseID) {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool takeQuiz(const vector<Question>& quiz) const {
+        int score = 0;
+        int totalQuestions = quiz.size();
+        for (const auto& question : quiz) {
+            question.displayQuestion();
+            char answer;
+            cout << "Your answer (A/B/C/D): ";
+            cin >> answer;
+            answer = toupper(answer);
+            if (question.checkAnswer(answer)) {
+                score++;
+            }
+        }
+        double percentage = (score / static_cast<double>(totalQuestions)) * 100;
+        cout << "Score: " << score << "/" << totalQuestions << " (" << percentage << "%)\n";
+        return percentage >= 60;
+    }
+    void takeCourseQuiz(const Course& course) const {
+        if (!isEnrolled(course)) {
+            throw runtime_error("You must enroll in the course before taking the quiz.");
+        }
+        cout << "\nStarting Level 1 Quiz:\n";
+        if (takeQuiz(course.quizzes)) {
+            cout << "\033[1;32mCongratulations! You passed the first level.\033[0m\n";
+            cout << "\nStarting Level 2 (Advanced) Quiz:\n";
+            if (takeQuiz(course.advancedQuizzes)) {
+                cout << "\033[1;32mCongratulations! You've passed the advanced quiz.\033[0m\n";
+                issueCertificate(course);
+            } else {
+                cout << "\033[1;31mPlease review the material and try the advanced quiz again.\033[0m\n";
+            }
+        } else {
+            cout << "\033[1;31mPlease review the material and try the first quiz again.\033[0m\n";
+        }
+    }
+    void issueCertificate(const Course& course) const {
+        cout << "\n\033[1;34m----------------------------------------------------\033[0m\n";
+        cout << "\033[1;33m                    CERTIFICATE OF COMPLETION\033[0m\n";
+        cout << "\033[1;34m----------------------------------------------------\033[0m\n";
+        cout << "This is to certify that \033[1;32m" << name << "\033[0m\n";
+        cout << "has successfully completed the course:";
+        cout << "\033[1;36m" << course.courseName << " (" << course.courseID << ")\033[0m\n";
+        cout << "\033[1;34m----------------------------------------------------\033[0m\n";
+    }
+    void viewCourseLink(const Course& course) const {
+        if (isEnrolled(course)) {
+            if (course.courseID == "C101") cout << "Learn the course here: https://www.nesoacademy.org/c\n";
+            else if (course.courseID == "C102") cout << "Learn the course here: https://www.nesoacademy.org/cplusplus\n";
+            else if (course.courseID == "P101") cout << "Learn the course here: https://www.nesoacademy.org/python\n";
+            else if (course.courseID == "H101") cout << "Learn the course here: https://www.nesoacademy.org/html\n";
+            else if (course.courseID == "DS101") cout << "Learn the course here: https://www.nesoacademy.org/data-structures\n";
+            else if (course.courseID == "DAA101") cout << "Learn the course here: https://www.nesoacademy.org/daa\n";
+        } else {
+            cout << "You need to enroll in the course to access the link.\n";
+        }
+    }
+};
+int main() {
+    string name, college, email;
+    cout << "Enter your name: ";
+    getline(cin, name);
+    cout << "Enter your college name: ";
+    getline(cin, college);
+    cout << "Enter your email: ";
+    getline(cin, email);
+    Student student(name, college, email);
+    Course cCourse("C Programming", "C101", "Learn the fundamentals of C programming.");
+cCourse.addQuiz(Question("What is the size of int on a 32-bit system?", {"2 bytes", "4 bytes", "8 bytes", "16 bytes"}, 'B'));
+cCourse.addQuiz(Question("Which operator is used for accessing the address of a variable?", {"*", "&", "%", "$"}, 'B'));
+cCourse.addQuiz(Question("What is the correct syntax to declare a pointer?", {"int *p;", "int p;", "*int p;", "int p;"}, 'A'));
+cCourse.addQuiz(Question("Which function is used to print output to the screen in C?", {"print()", "output()", "printf()", "write()"}, 'C'));
+cCourse.addQuiz(Question("What is the output of printf(\"%d\", 10 + 5);?", {"10", "5", "105", "15"}, 'D'));
+cCourse.addAdvancedQuiz(Question("Which keyword is used to prevent a variable from being modified?", {"const", "static", "volatile", "restrict"}, 'A'));
+cCourse.addAdvancedQuiz(Question("What is the output of printf(\"%d\", sizeof(char)); on most systems?", {"1", "2", "4", "8"}, 'A'));
+cCourse.addAdvancedQuiz(Question("Which operator is used to access a structure member through a pointer?", {".", "->", "*", "&"}, 'B'));
+cCourse.addAdvancedQuiz(Question("Which of the following is a dynamic memory allocation function?", {"malloc", "calloc", "realloc", "All of the above"}, 'D'));
+cCourse.addAdvancedQuiz(Question("What is the value of the expression 10 / 3 in C?", {"3.33", "3", "3.0", "Error"}, 'B'));
+Course cppCourse("C++ Programming", "C102", "Learn the basics of C++ programming.");
+cppCourse.addQuiz(Question("Which operator is used to allocate memory dynamically in C++?", {"new", "malloc", "alloc", "calloc"}, 'A'));
+cppCourse.addQuiz(Question("What is the output of cout << 5 + '0'; ?", {"5", "50", "53", "Error"}, 'C'));
+cppCourse.addQuiz(Question("Which feature of C++ allows for object-oriented programming?", {"Encapsulation", "Inheritance", "Abstraction", "All of the above"}, 'D'));
+cppCourse.addQuiz(Question("What is the size of an int data type in C++?", {"2 bytes", "4 bytes", "Depends on compiler", "1 byte"}, 'C'));
+cppCourse.addQuiz(Question("What is the default access level in classes?", {"Private", "Public", "Protected", "Depends on compiler"}, 'A'));
+cppCourse.addAdvancedQuiz(Question("Which feature of OOP allows for code reuse?", {"Encapsulation", "Polymorphism", "Inheritance", "Abstraction"}, 'C'));
+cppCourse.addAdvancedQuiz(Question("Which C++ standard added the 'auto' keyword?", {"C++98", "C++03", "C++11", "C++17"}, 'C'));
+cppCourse.addAdvancedQuiz(Question("What does the 'virtual' keyword indicate?", {"Static function", "Abstract class", "Virtual function", "Pure function"}, 'C'));
+cppCourse.addAdvancedQuiz(Question("What does STL stand for?", {"Standard Type Library", "Standard Template Library", "System Template Library", "System Type Library"}, 'B'));
+cppCourse.addAdvancedQuiz(Question("Which function is used to free dynamically allocated memory?", {"free", "delete", "release", "clear"}, 'B'));
+Course pythonCourse("Python Programming", "P101", "Learn Python programming for beginners.");
+pythonCourse.addQuiz(Question("Which keyword is used to define a function in Python?", {"def", "func", "function", "lambda"}, 'A'));
+pythonCourse.addQuiz(Question("What is the output of 3 * 'Python'?", {"Error", "PythonPythonPython", "Python3", "None"}, 'B'));
+pythonCourse.addQuiz(Question("What is the output of 5 ** 3 in Python?", {"15", "8", "125", "None"}, 'C'));
+pythonCourse.addQuiz(Question("Which of the following is a tuple?", {"[1,2,3]", "(1,2,3)", "{1,2,3}", "None"}, 'B'));
+pythonCourse.addQuiz(Question("What does the len() function do?", {"Returns the length", "Finds the max", "Converts to string", "Finds the min"}, 'A'));
+pythonCourse.addAdvancedQuiz(Question("Which method is used to join elements of a list in Python?", {"join()", "append()", "concat()", "merge()"}, 'A'));
+pythonCourse.addAdvancedQuiz(Question("What is the output of print(0.1 + 0.2 == 0.3)?", {"True", "False", "0.3", "Error"}, 'B'));
+pythonCourse.addAdvancedQuiz(Question("What does the 'with' statement ensure in Python?", {"Error handling", "Automatic resource management", "Fast performance", "Exception raising"}, 'B'));
+pythonCourse.addAdvancedQuiz(Question("Which module supports regular expressions in Python?", {"re", "regex", "regexp", "expressions"}, 'A'));
+pythonCourse.addAdvancedQuiz(Question("Which Python data structure is immutable?", {"List", "Set", "Dictionary", "Tuple"}, 'D'));
+Course htmlCourse("HTML", "H101", "Introduction to HTML for web development.");
+htmlCourse.addQuiz(Question("What does HTML stand for?", {"Hyper Text Markup Language", "Home Tool Markup Language", "Hyperlinks and Text Markup Language", "None of these"}, 'A'));
+htmlCourse.addQuiz(Question("Which HTML tag is used to display a picture?", {"<picture>", "<img>", "<pic>", "<src>"}, 'B'));
+htmlCourse.addQuiz(Question("What tag is used for the largest heading?", {"<heading>", "<h1>", "<head>", "<h6>"}, 'B'));
+htmlCourse.addQuiz(Question("Which tag is used to create an ordered list?", {"<ul>", "<ol>", "<list>", "<order>"}, 'B'));
+htmlCourse.addQuiz(Question("What does the <a> tag specify?", {"Anchor", "Image", "Alignment", "List"}, 'A'));
+htmlCourse.addAdvancedQuiz(Question("Which tag is used to create a checkbox in HTML?", {"<input>", "<checkbox>", "<check>", "<option>"}, 'A'));
+htmlCourse.addAdvancedQuiz(Question("Which attribute is used to open a link in a new tab?", {"new", "open", "target='_blank'", "href='_blank'"}, 'C'));
+htmlCourse.addAdvancedQuiz(Question("How do you specify a background color in HTML?", {"style", "background", "bgcolor", "None"}, 'A'));
+htmlCourse.addAdvancedQuiz(Question("Which HTML tag is used to define an internal style sheet?", {"<script>", "<style>", "<css>", "<link>"}, 'B'));
+htmlCourse.addAdvancedQuiz(Question("What is the purpose of the <meta> tag?", {"Script", "Metadata", "List items", "Form"}, 'B'));
+Course dsCourse("Data Structures", "DS101", "Learn fundamental data structures.");
+dsCourse.addQuiz(Question("Which data structure follows FIFO (First In, First Out)?", {"Stack", "Queue", "Tree", "Graph"}, 'B'));
+dsCourse.addQuiz(Question("In a binary tree, each node has at most _ child nodes.", {"1", "2", "3", "4"}, 'B'));
+dsCourse.addQuiz(Question("What is a collection of nodes with no cycle?", {"Graph", "Tree", "Linked List", "Stack"}, 'B'));
+dsCourse.addQuiz(Question("Which data structure uses the Last In First Out (LIFO) principle?", {"Queue", "Tree", "Stack", "Heap"}, 'C'));
+dsCourse.addQuiz(Question("In which data structure are elements added at one end and removed from the other?", {"Queue", "Stack", "Array", "Linked List"}, 'A'));
+dsCourse.addAdvancedQuiz(Question("Which data structure is most efficient for implementing priority queues?", {"Queue", "Heap", "Stack", "Linked List"}, 'B'));
+dsCourse.addAdvancedQuiz(Question("What is the time complexity of accessing an element in a hash table?", {"O(n)", "O(log n)", "O(1)", "O(n log n)"}, 'C'));
+dsCourse.addAdvancedQuiz(Question("Which of the following data structures is non-linear?", {"Stack", "Queue", "Graph", "Array"}, 'C'));
+dsCourse.addAdvancedQuiz(Question("What is the worst-case time complexity of binary search?", {"O(log n)", "O(n)", "O(n^2)", "O(1)"}, 'A'));
+dsCourse.addAdvancedQuiz(Question("Which traversal method uses the root first in binary trees?", {"Inorder", "Preorder", "Postorder", "Level-order"}, 'B'));
+Course daaCourse("Design and Analysis of Algorithms", "DAA101", "Learn about algorithm efficiency and complexity.");
+daaCourse.addQuiz(Question("What is the time complexity of binary search?", {"O(n)", "O(log n)", "O(n^2)", "O(1)"}, 'B'));
+daaCourse.addQuiz(Question("Which algorithm is used to find the shortest path in a graph?", {"Dijkstra's algorithm", "Prim's algorithm", "Kruskal's algorithm", "Bubble Sort"}, 'A'));
+daaCourse.addQuiz(Question("What is the primary goal of algorithm analysis?", {"Performance", "Cost", "Ease of use", "Programming language"}, 'A'));
+daaCourse.addQuiz(Question("What is the worst-case time complexity of Merge Sort?", {"O(n log n)", "O(n^2)", "O(log n)", "O(n)"}, 'A'));
+daaCourse.addQuiz(Question("Which data structure is often used in recursive algorithms?", {"Array", "Stack", "Queue", "Linked List"}, 'B'));
+daaCourse.addAdvancedQuiz(Question("What is the best case time complexity of Quick Sort?", {"O(n)", "O(n log n)", "O(n^2)", "O(log n)"}, 'B'));
+daaCourse.addAdvancedQuiz(Question("Which of the following algorithms is used for finding minimum spanning trees?", {"Prim's", "Dijkstra's", "BFS", "DFS"}, 'A'));
+daaCourse.addAdvancedQuiz(Question("Which notation is used to describe an algorithm's growth rate?", {"Sigma", "Theta", "Lambda", "Delta"}, 'B'));
+daaCourse.addAdvancedQuiz(Question("What is the main benefit of dynamic programming?", {"Code readability", "Memory usage", "Time optimization", "None"}, 'C'));
+daaCourse.addAdvancedQuiz(Question("Which algorithm uses a divide-and-conquer approach?", {"Bubble Sort", "Quick Sort", "Selection Sort", "Insertion Sort"}, 'B'));
+    cout << "Welcome " << student.name << " to our learning platform!" << endl;
+do {
+    cout << "1. Enroll in Course\n";
+    cout << "2. View Courses\n";
+    cout << "3. View Course Links\n";
+    cout << "4. Take Quiz\n";
+    cout << "5. Exit\n";
+    cout << "Choose an option: ";
+    int choice;
+    cin >> choice;
+    if (choice == 1) {
+        cout << "Enter the Course IDs to enroll in (separated by spaces): ";
+        string courseIDs;
+        cin.ignore();
+        getline(cin, courseIDs);
+        istringstream ss(courseIDs);
+        string courseID;
+        while (ss >> courseID) {
+            if (courseID == "C101") student.enrollCourse(cCourse);
+            else if (courseID == "C102") student.enrollCourse(cppCourse);
+            else if (courseID == "P101") student.enrollCourse(pythonCourse);
+            else if (courseID == "H101") student.enrollCourse(htmlCourse);
+            else if (courseID == "DS101") student.enrollCourse(dsCourse);
+            else if (courseID == "DAA101") student.enrollCourse(daaCourse);
+            else {
+                cout << "Invalid Course ID: " << courseID << endl;
+            }
+        }
+    } else if (choice == 2) {
+        cCourse.showDetails();
+        cppCourse.showDetails();
+        pythonCourse.showDetails();
+        htmlCourse.showDetails();
+        dsCourse.showDetails();
+        daaCourse.showDetails();
+    } else if (choice == 3) {
+        string courseID;
+        cout << "Enter the Course ID to view link: ";
+        cin >> courseID;
+        if (courseID == "C101") student.viewCourseLink(cCourse);
+        else if (courseID == "C102") student.viewCourseLink(cppCourse);
+        else if (courseID == "P101") student.viewCourseLink(pythonCourse);
+        else if (courseID == "H101") student.viewCourseLink(htmlCourse);
+        else if (courseID == "DS101") student.viewCourseLink(dsCourse);
+        else if (courseID == "DAA101") student.viewCourseLink(daaCourse);
+    } else if (choice == 4) {
+        string courseID;
+        cout << "Enter the Course ID to take the quiz: ";
+        cin >> courseID;
+        try {
+            if (courseID == "C101") student.takeCourseQuiz(cCourse);
+            else if (courseID == "C102") student.takeCourseQuiz(cppCourse);
+            else if (courseID == "P101") student.takeCourseQuiz(pythonCourse);
+            else if (courseID == "H101") student.takeCourseQuiz(htmlCourse);
+            else if (courseID == "DS101") student.takeCourseQuiz(dsCourse);
+            else if (courseID == "DAA101") student.takeCourseQuiz(daaCourse);
+            else {
+                cout << "Invalid Course ID: " << courseID << endl;
+            }
+        } catch (const runtime_error& ex) {
+            cout << "Error: " << ex.what() << endl;
+        }
+    } else if (choice == 5) {
+        return 0;
+    } else {
+        cout << "Invalid choice. Please try again.\n";
+    }
+} while (true);
+    return 0;
+}
